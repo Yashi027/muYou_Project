@@ -6,7 +6,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const registerUser = asyncHandlers( async(req,res)=>{
    const {username , fullname, email, password} = req.body;
-   console.log(username);
+   
    if(username === "")
     throw new apiError(400, "All fields are required")
    if(fullname === "")
@@ -25,7 +25,12 @@ const registerUser = asyncHandlers( async(req,res)=>{
     throw new apiError(409,"User already existswith same info");
 
    const avatarlocalpath = req.files?.avatar?.[0]?.path;
-   const coverimageLocalPath = req.files?.coverimage?.[0]?.path;
+   //const coverimageLocalPath = req.files?.coverimage?.[0]?.path;
+
+   let coverimageLocalPath;
+   if(req.files && Array.isArray(req.files.coverimage) && req.files.coverimage.length > 0){
+      coverimageLocalPath = req.files.coverimage[0].path;
+   }
 
    console.log("Uploaded files:", req.files);
    console.log("Avatar file path:", req.files?.avatar?.[0]?.path);
