@@ -1,7 +1,8 @@
 
-import { upload } from "../middlewares/multer.js"; // adjust path as needed
-import { registerUser } from "../controllers/user.controller.js";
+import { upload } from "../middlewares/multer.js"; 
+import { loginUser, logoutUser, registerUser } from "../controllers/user.controller.js";
 import { Router } from "express";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -14,4 +15,8 @@ router.post(
   registerUser
 );
 
+
+router.route("/login").post(loginUser)
+
+router.route("/logout").post(verifyJWT ,logoutUser)
 export { router };
