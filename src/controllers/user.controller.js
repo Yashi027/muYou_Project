@@ -196,7 +196,7 @@ const loginUser = asyncHandlers(async(req,res)=>{
       user.password = newpassword
       await user.save({validateBeforeSave: false})
 
-      return res.status(200).json(200,{},"Password changed successfully")
+      return res.status(200).json(new apiResponse(200,{},"Password changed successfully"))
    })
 
 
@@ -210,7 +210,7 @@ const loginUser = asyncHandlers(async(req,res)=>{
       if(!email)
          throw new apiError(400,"Fill the required field")
 
-      const user = User.findByIdAndUpdate(req.user._id,{$set:{email}},{new: true}).select("-password")
+      const user = await User.findByIdAndUpdate(req.user._id,{$set:{email}},{new: true}).select("-password")
 
       return res.status(200)
       .json(new apiResponse(200,user,"User details updated successfully"))
@@ -249,5 +249,67 @@ const loginUser = asyncHandlers(async(req,res)=>{
    })
 
 
+   const getUserChannelProfile = asyncHandlers(async(req,res) => {
+      const {username} = req.params
+      if(!username)
+         throw new apiError(400,"Username not defined")
+
+      const channel = await User.aggregate([
+         {
+            $match:{
+               username : username?.toLowerCase()
+            }
+         },{
+            $lookup:{
+               from: "subscriptions",
+               localField:"_id",
+               foreignField:"channel",
+               as: "subscribers"
+            }
+         },{ 
+            $lookup:{
+               from: "subscriptions",
+               localField:"_id",
+               foreignField:"subscriber",
+               as: "subscribedTo"
+            
+         }
+         },{
+            $addFields:{
+               subscribersCount:{
+                  $size:"$subscribers"
+               },
+               subscribedToCount:{
+                  $size: "$subscribedTo"
+               },
+               isSubscribed:{
+                  $cond: {
+                     if: {$in : [req.user?._id , "$subscribers.subscriber"]},
+                     then : true,
+                     else: false
+                  }
+               }
+            }
+         },{
+            $project:{
+               fullname: 1,
+               email: 1,
+               avatar: 1,
+               subscribersCount: 1,
+               subscribedToCount: 1,
+               isSubscribed: 1,
+               coverimage: 1
+            }
+         }
+      ])
+      if(!channel?.length)
+         throw new apiError(404,"Channel does not exist")
+      console.log(channel)
+
+      return res.status(200)
+      .json(new apiResponse(200,channel[0],"User channel fetched successfully"))
+   })
+
+
 export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword,
-    getcurrentUser, updateAccountDetails, updateAvatar, updateCoverimage }
+    getcurrentUser, updateAccountDetails, updateAvatar, updateCoverimage, getUserChannelProfile }
